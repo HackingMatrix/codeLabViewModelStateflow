@@ -85,6 +85,7 @@ fun GameScreen(
             onUserGuessChanged = { gameViewModel.updateUserGuess(it) },
             onKeyboardDone = { gameViewModel.checkUserGuess() },
             userGuess = gameViewModel.userGuess,
+            wordCount = gameUiState.currentWordCount,
             isGuessWrong = gameUiState.isGuessedWordWrong,
             modifier = Modifier
                 .fillMaxWidth()
@@ -100,7 +101,12 @@ fun GameScreen(
             verticalArrangement = Arrangement.spacedBy(mediumPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
+            if (gameUiState.isGameOver) {
+                FinalScoreDialog(
+                    score = gameUiState.score,
+                    onPlayAgain = { gameViewModel.resetGame() }
+                )
+            }
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { gameViewModel.checkUserGuess() }
@@ -112,7 +118,7 @@ fun GameScreen(
             }
 
             OutlinedButton(
-                onClick = { },
+                onClick = { gameViewModel.skipWord() },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -120,9 +126,16 @@ fun GameScreen(
                     fontSize = 16.sp
                 )
             }
+
         }
 
-        GameStatus(score = 0, modifier = Modifier.padding(20.dp))
+        GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
+        if (gameUiState.isGameOver) {
+            FinalScoreDialog(
+                score = gameUiState.score,
+                onPlayAgain = { gameViewModel.resetGame() }
+            )
+        }
     }
 }
 
@@ -145,6 +158,7 @@ fun GameLayout(
     onKeyboardDone: () -> Unit,
     isGuessWrong: Boolean,
     userGuess: String,
+    wordCount: Int,
     currentScrambledWord: String,
     modifier: Modifier = Modifier) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
@@ -164,7 +178,7 @@ fun GameLayout(
                     .background(colorScheme.surfaceTint)
                     .padding(horizontal = 10.dp, vertical = 4.dp)
                     .align(alignment = Alignment.End),
-                text = stringResource(R.string.word_count, 0),
+                text = stringResource(R.string.word_count, wordCount),
                 style = typography.titleMedium,
                 color = colorScheme.onPrimary
             )
@@ -224,8 +238,8 @@ private fun FinalScoreDialog(
             // button. If you want to disable that functionality, simply use an empty
             // onCloseRequest.
         },
-        title = { Text(text = stringResource(R.string.congratulations)) },
-        text = { Text(text = stringResource(R.string.you_scored, score)) },
+        title = { Text(stringResource(R.string.congratulations)) },
+        text = { Text(stringResource(R.string.you_scored, score)) },
         modifier = modifier,
         dismissButton = {
             TextButton(
@@ -237,7 +251,11 @@ private fun FinalScoreDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onPlayAgain) {
+            TextButton(
+                onClick = {
+                    onPlayAgain()
+                }
+            ) {
                 Text(text = stringResource(R.string.play_again))
             }
         }
